@@ -26,17 +26,27 @@ class DataTransformation:
     def initiate_data_transformation(self,train_path,test_path):
 
         try:
+            numerical_columns = ['Qty', 'PE Amount', 'BM Amount', 'LB hrs', 'LB Amount', 'CE Amount', 'Major SC Amount', 'Fuel usage (L)', 'Attribute 1', 'Attribute 2', 'Attribute 3', 'Attribute 4', 'project_number', 'total_new', 'Total', 'Single Unit Price', 'epic_embodied_carbon', 'aus_lci_embodied_carbon', 'carbon_allowance', 'construction_carbon', 'Default PE Unit Price', 'Default BM Unit Price', 'Default LB Unit Hrs', 'Default SC Unit Rate', 'Lat', 'Long', 'Flag ']
             train_df=pd.read_csv(train_path)
             test_df=pd.read_csv(test_path)
 
             logging.info("Read train and test data completed")
 
+
+            for column in range(len(numerical_columns)):
+                train_df[numerical_columns[column]]=train_df[numerical_columns[column]].fillna(train_df[numerical_columns[column]].mean())
+            
+            for column in range(len(numerical_columns)):
+                test_df[numerical_columns[column]]=test_df[numerical_columns[column]].fillna(test_df[numerical_columns[column]].mode())
+
+            train_df.dropna(inplace=True)
+            test_df.dropna(inplace=True)
             target_column_name="Total"
 
-            input_feature_train_df=train_df.drop(columns=[target_column_name],axis=1)
+            input_feature_train_df=train_df.drop(columns=[target_column_name,'Attribute 4'],axis=1)
             target_feature_train_df=train_df[target_column_name]
 
-            input_feature_test_df=test_df.drop(columns=[target_column_name],axis=1)
+            input_feature_test_df=test_df.drop(columns=[target_column_name,'Attribute 4'],axis=1)
             target_feature_test_df=test_df[target_column_name]
 
             logging.info(
