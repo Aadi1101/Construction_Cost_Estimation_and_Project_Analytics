@@ -1,6 +1,6 @@
 import os,sys,dill,json
 from src.exception import CustomException
-from sklearn.metrics import r2_score
+from sklearn.metrics import r2_score,mean_absolute_error,mean_squared_error
 from sklearn.model_selection import GridSearchCV
 from src.logger import logging
 
@@ -15,7 +15,13 @@ def save_object(filepath,obj):
     
 def evaluate_models(x_train,y_train,x_test,y_test,models,params):
     try:
-        report = {}
+        train_report_score = {}
+        train_report_mae = {}
+        train_report_mse = {}
+
+        test_report_score = {}
+        test_report_mae = {}
+        test_report_mse = {}
 
         for i in range(len(list(models))):
             model = list(models.values())[i]
@@ -32,11 +38,26 @@ def evaluate_models(x_train,y_train,x_test,y_test,models,params):
             y_train_pred = model.predict(x_train)
             y_test_pred = model.predict(x_test)
             logging.info(f"Getting the r2score for train and test data for {model}")
+            
+            train_model_mae = mean_absolute_error(y_train,y_train_pred)
+            test_model_mae = mean_absolute_error(y_test,y_test_pred)
+
+            train_model_mse = mean_squared_error(y_train,y_train_pred)
+            test_model_mse = mean_squared_error(y_test,y_test_pred)
+
             train_model_score = r2_score(y_train,y_train_pred)
             test_model_score = r2_score(y_test,y_test_pred)
-            report[list(models.keys())[i]] = test_model_score
+
+            train_report_score[list(models.keys())[i]] = train_model_score
+            train_report_mae[list(models.keys())[i]] = train_model_mae
+            train_report_mse[list(models.keys())[i]] = train_model_mse
+
+            test_report_score[list(models.keys())[i]] = test_model_score
+            test_report_mae[list(models.keys())[i]] = test_model_mae
+            test_report_mse[list(models.keys())[i]] = test_model_mse
+
             logging.info(f"Obtained r2score of {test_model_score} and completed with {model}.")
-        return report
+        return train_report_mae,train_report_mse,train_report_score,test_report_mae,test_report_mse,test_report_score
     except Exception as e:
         raise CustomException(e,sys)
     

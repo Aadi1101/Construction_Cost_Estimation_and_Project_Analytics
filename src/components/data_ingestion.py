@@ -21,7 +21,7 @@ class DataIngestion():
     def initiate_data_ingestion(self):
         try:
             logging.info('Started Data Ingestion.')
-            df = pd.read_excel('notebooks\\aggregated_file_copy.xlsx')
+            df = pd.read_csv('notebooks\cleaned_data.csv')
             logging.info("Read the dataset.")
             os.makedirs(os.path.dirname(self.data_ingestion_config.raw_path),exist_ok=True)
             df.to_csv(self.data_ingestion_config.raw_path,index=False,header=True)
@@ -44,6 +44,6 @@ if __name__ == '__main__':
     obj = DataIngestion()
     trainset,testset = obj.initiate_data_ingestion()
     transform_obj = DataTransformation()
-    train_array,test_array,_,_ = transform_obj.initiate_data_transformation(train_path=trainset,test_path=testset)
+    train_array,test_array,_= transform_obj.initiate_data_transformation(train_path=trainset,test_path=testset)
     model_obj = ModelTrainer()
     model_obj.initiate_model_trainer(train_arr=train_array,test_arr=test_array)

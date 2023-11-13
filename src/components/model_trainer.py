@@ -16,7 +16,14 @@ from dataclasses import dataclass
 @dataclass
 class ModelTrainerConfig():
     model_path:str = os.path.join('src/models','best_model.pkl')
-    model_report_path:str = os.path.join('src/models','model_report.json')
+    
+    test_model_report_score_path:str = os.path.join('src/models','test_model_report_score.json')
+    test_model_report_mae_path:str = os.path.join('src/models','test_model_report_mae.json')
+    test_model_report_mse_path:str = os.path.join('src/models','test_model_report_mse.json')
+    
+    train_model_report_score_path:str = os.path.join('src/models','train_model_report_score.json')
+    train_model_report_mae_path:str = os.path.join('src/models','train_model_report_mae.json')
+    train_model_report_mse_path:str = os.path.join('src/models','train_model_report_mse.json')
 
 class ModelTrainer():
     def __init__(self):
@@ -56,7 +63,7 @@ class ModelTrainer():
                     'learning_rate':[.1,.01,.05,.001],
                     'subsample':[0.6,0.7,0.75,0.8,0.85,0.9],
                     'criterion':['squared_error', 'friedman_mse'],
-                    'max_features':['auto','sqrt','log2'],
+                    'max_features':['1.0','sqrt','log2'],
                     'n_estimators': [8,16,32,64,128,256]
                 },
                 "Linear Regression":{},
@@ -76,15 +83,23 @@ class ModelTrainer():
                 }
                 
             }
+            train_model_report_mae = {}
+            train_model_report_mse = {}
+            train_model_report_score = {}
 
-            model_report:dict = evaluate_models(x_train=x_train,y_train=y_train,
+            test_model_report_mae = {}
+            test_model_report_mse = {}
+            test_model_report_score = {}
+
+            train_model_report_mae,train_model_report_mse,train_model_report_score,test_model_report_mae,test_model_report_mse,test_model_report_score = evaluate_models(x_train=x_train,y_train=y_train,
                                                x_test=x_test,y_test=y_test,
                                                models=models,params=params) 
             
-            best_model_score = max(sorted(model_report.values()))
+            best_model_score = max(sorted(test_model_report_score.values()))
 
-            best_model_name = list(model_report.keys())[
-                list(model_report.values()).index(best_model_score)
+
+            best_model_name = list(test_model_report_score.keys())[
+                list(test_model_report_score.values()).index(best_model_score)
             ]
 
             best_model = models[best_model_name]
@@ -100,7 +115,14 @@ class ModelTrainer():
             )
             predicted = best_model.predict(x_test)
             r2_square = r2_score(predicted,y_test)
-            save_json_object(file_path=self.model_trainer_config.model_report_path,obj=model_report)
+            
+            save_json_object(file_path=self.model_trainer_config.train_model_report_score_path,obj=train_model_report_score)
+            save_json_object(file_path=self.model_trainer_config.train_model_report_mae_path,obj=train_model_report_mae)
+            save_json_object(file_path=self.model_trainer_config.train_model_report_mse_path,obj=train_model_report_mse)
+
+            save_json_object(file_path=self.model_trainer_config.test_model_report_score_path,obj=test_model_report_score)
+            save_json_object(file_path=self.model_trainer_config.test_model_report_mae_path,obj=test_model_report_mae)
+            save_json_object(file_path=self.model_trainer_config.test_model_report_mse_path,obj=test_model_report_mse)
             return (r2_square,best_model_name)
  
         except Exception as e:
