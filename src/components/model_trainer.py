@@ -1,35 +1,80 @@
-import os,sys
-from src.exception import CustomException
-from src.logger import logging
-
+"""
+This module is responsible for training machine learning models and selecting \
+    the best-performing model based on evaluation metrics. It supports various \
+        regression algorithms, tunes hyperparameters, and logs the training process. \
+            The best model is saved for future use, and performance metrics are \
+                stored in JSON files.
+"""
+import os
+import sys
+from dataclasses import dataclass
 from sklearn.linear_model import LinearRegression
 from sklearn.ensemble import RandomForestRegressor,GradientBoostingRegressor,AdaBoostRegressor
 from sklearn.tree import DecisionTreeRegressor
+from sklearn.metrics import r2_score
 from catboost import CatBoostRegressor
 from xgboost import XGBRegressor
-from sklearn.metrics import r2_score
-
+from src.exception import CustomException
+from src.logger import logging
 from src.utils import evaluate_models,save_object,save_json_object
-from dataclasses import dataclass
 
 
 @dataclass
 class ModelTrainerConfig():
+    """
+    Configuration class for model training paths.
+
+    Attributes:
+        model_path (str): Path to save the best trained model.
+        test_model_report_score_path (str): Path to save the test dataset's model score report.
+        test_model_report_mae_path (str): Path to save the test dataset's MAE report.
+        test_model_report_mse_path (str): Path to save the test dataset's MSE report.
+        train_model_report_score_path (str): Path to save the train dataset's model score report.
+        train_model_report_mae_path (str): Path to save the train dataset's MAE report.
+        train_model_report_mse_path (str): Path to save the train dataset's MSE report.
+    """
     model_path:str = os.path.join('src/models','best_model.pkl')
-    
+
     test_model_report_score_path:str = os.path.join('src/models','test_model_report_score.json')
     test_model_report_mae_path:str = os.path.join('src/models','test_model_report_mae.json')
     test_model_report_mse_path:str = os.path.join('src/models','test_model_report_mse.json')
-    
+
     train_model_report_score_path:str = os.path.join('src/models','train_model_report_score.json')
     train_model_report_mae_path:str = os.path.join('src/models','train_model_report_mae.json')
     train_model_report_mse_path:str = os.path.join('src/models','train_model_report_mse.json')
 
 class ModelTrainer():
+    """
+    A class that handles model training, hyperparameter tuning, and selection of the best model 
+    based on performance metrics such as R2 score, MAE, and MSE.
+
+    This class evaluates multiple regression models, tunes their hyperparameters, and selects 
+    the best-performing model. It saves the best model and performance reports.
+
+    Attributes:
+        model_trainer_config (ModelTrainerConfig): Configuration object for saving model \
+             and report paths.
+    """
     def __init__(self):
         self.model_trainer_config = ModelTrainerConfig()
 
     def initiate_model_trainer(self,train_arr,test_arr):
+        """
+        Initiates the model training process, evaluates various models, tunes their hyperparameters,
+        and selects the best model. The performance reports for both training and testing datasets 
+        are saved in JSON files.
+
+        Args:
+            train_arr (np.ndarray): The training data array with features and target.
+            test_arr (np.ndarray): The testing data array with features and target.
+
+        Returns:
+            tuple: A tuple containing the R2 score of the best model and the name of the best model.
+
+        Raises:
+            CustomException: If no suitable model is found or any exception occurs \
+                during the process.
+        """
         try:
             x_train,y_train,x_test,y_test = (
                 train_arr[:,:-1],
@@ -54,7 +99,6 @@ class ModelTrainer():
                 },
                 "Random Forest":{
                     'criterion':['squared_error', 'friedman_mse', 'absolute_error', 'poisson'],
-                 
                     'max_features':['sqrt','log2',None],
                     'n_estimators': [8,16,32,64,128,256]
                 },
@@ -81,7 +125,7 @@ class ModelTrainer():
                     'loss':['linear','square','exponential'],
                     'n_estimators': [8,16,32,64,128,256]
                 }
-                
+
             }
             train_model_report_mae = {}
             train_model_report_mse = {}
@@ -91,13 +135,12 @@ class ModelTrainer():
             test_model_report_mse = {}
             test_model_report_score = {}
 
-            train_model_report_mae,train_model_report_mse,train_model_report_score,test_model_report_mae,test_model_report_mse,test_model_report_score = evaluate_models(x_train=x_train,y_train=y_train,
-                                               x_test=x_test,y_test=y_test,
-                                               models=models,params=params) 
-            
+            train_model_report_mae,train_model_report_mse,train_model_report_score, \
+                test_model_report_mae,test_model_report_mse,\
+                    test_model_report_score = evaluate_models(
+                x_train=x_train,y_train=y_train, x_test=x_test,y_test=y_test,
+                models=models,params=params)
             best_model_score = max(sorted(test_model_report_score.values()))
-
-
             best_model_name = list(test_model_report_score.keys())[
                 list(test_model_report_score.values()).index(best_model_score)
             ]
@@ -106,8 +149,9 @@ class ModelTrainer():
 
             if best_model_score < 0.6:
                 raise CustomException("No best model found",sys)
-            
-            logging.info(f"Best found model: {best_model_name} both on training and testing dataset.")
+
+            logging.info(f"Best found model: {best_model_name} both on \
+                         training and testing dataset.")
 
             save_object(
                 filepath=self.model_trainer_config.model_path,
@@ -115,15 +159,27 @@ class ModelTrainer():
             )
             predicted = best_model.predict(x_test)
             r2_square = r2_score(predicted,y_test)
-            
-            save_json_object(file_path=self.model_trainer_config.train_model_report_score_path,obj=train_model_report_score)
-            save_json_object(file_path=self.model_trainer_config.train_model_report_mae_path,obj=train_model_report_mae)
-            save_json_object(file_path=self.model_trainer_config.train_model_report_mse_path,obj=train_model_report_mse)
 
-            save_json_object(file_path=self.model_trainer_config.test_model_report_score_path,obj=test_model_report_score)
-            save_json_object(file_path=self.model_trainer_config.test_model_report_mae_path,obj=test_model_report_mae)
-            save_json_object(file_path=self.model_trainer_config.test_model_report_mse_path,obj=test_model_report_mse)
+            save_json_object(
+                file_path=self.model_trainer_config.train_model_report_score_path,
+                obj=train_model_report_score)
+            save_json_object(
+                file_path=self.model_trainer_config.train_model_report_mae_path,
+                obj=train_model_report_mae)
+            save_json_object(
+                file_path=self.model_trainer_config.train_model_report_mse_path,
+                obj=train_model_report_mse)
+
+            save_json_object(
+                file_path=self.model_trainer_config.test_model_report_score_path,
+                obj=test_model_report_score)
+            save_json_object(
+                file_path=self.model_trainer_config.test_model_report_mae_path,
+                obj=test_model_report_mae)
+            save_json_object(
+                file_path=self.model_trainer_config.test_model_report_mse_path,
+                obj=test_model_report_mse)
             return (r2_square,best_model_name)
- 
+
         except Exception as e:
-            raise CustomException(e,sys)
+            raise CustomException(e,sys) from e

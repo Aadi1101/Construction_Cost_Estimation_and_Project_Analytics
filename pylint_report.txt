@@ -1,0 +1,11 @@
+************* Module src.components.data_ingestion
+src\components\data_ingestion.py:34:0: R0903: Too few public methods (1/2) (too-few-public-methods)
+************* Module src.components.data_transformation
+src\components\data_transformation.py:33:0: R0903: Too few public methods (1/2) (too-few-public-methods)
+************* Module src.components.model_trainer
+src\components\model_trainer.py:61:4: R0914: Too many local variables (21/15) (too-many-locals)
+src\components\model_trainer.py:46:0: R0903: Too few public methods (1/2) (too-few-public-methods)
+
+------------------------------------------------------------------
+Your code has been rated at 9.81/10 (previous run: 9.70/10, +0.11)
+
