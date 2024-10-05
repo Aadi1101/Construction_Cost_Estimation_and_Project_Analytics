@@ -7,7 +7,6 @@ from flask import Flask,request,render_template
 import dill
 import numpy as np
 import pandas as pd
-import jsonify
 
 app=Flask('__name__')
 @app.route('/')
